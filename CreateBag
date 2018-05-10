@@ -1,0 +1,57 @@
+PRODUCT_NAME='VeloCarPooling'
+CONFIG='Release'
+SDK='iphoneos'
+BUILD_DIR='build'
+
+# clean
+echo "Start Clean..."
+rm -rf ${BUILD_DIR}
+xcodebuild clean  -workspace ${PRODUCT_NAME}.xcworkspace -scheme ${PRODUCT_NAME} -sdk ${SDK}
+echo -e "XCode Clean Success"
+
+ARCHIVE_PATH=${BUILD_DIR}/${PRODUCT_NAME}.xcarchive
+echo -e " Clean Build File"
+rm -rf $ARCHIVE_PATH
+
+echo "Start Build..."
+
+# build archive, ad_hoc cert 
+xcodebuild archive -workspace ${PRODUCT_NAME}.xcworkspace -scheme ${PRODUCT_NAME} -sdk ${SDK} -configuration ${CONFIG} -archivePath $ARCHIVE_PATH APP_PROFILE="f111a766-1136-410d-b98d-19a8bad74ab6" TODAY_PROFILE="54032e37-f9e9-4dcf-81ce-e45f9466196a"
+# build all	
+REV=`date +%Y%m%d-%H%M`
+ENVS=('test' 'simulator' 'preonline' 'online')
+for RUN_ENV in ${ENVS[*]}
+do
+	APP_VER=`/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" VeloCarPooling/VeloCarPooling-Info.plist`
+	echo -e "输出BUILD：  ${APP_VER}  ${RUN_ENV} "
+	# build
+ 	if [ -e $ARCHIVE_PATH ]
+ 		then
+ 			echo -e " XCode Build Success"
+ 			echo -e " Set Enviroment"
+ 			/usr/libexec/PlistBuddy -c "Set com.didapinche.Env ${RUN_ENV}" -c "Save" $ARCHIVE_PATH/Products/Applications/${PRODUCT_NAME}.app/info.plist
+ 	        IPA_PATH=${BUILD_DIR}/didaCarpooling_${APP_VER}_${RUN_ENV}_${REV}.ipa
+ 			# archive
+ 			xcodebuild -exportArchive -archivePath $ARCHIVE_PATH -exportFormat ipa -exportPath ${IPA_PATH}  -exportWithOriginalSigningIdentity
+ 			if [ -e $IPA_PATH ]
+ 				then
+ 					echo -e "Finished:  ${IPA_PATH}"
+ 				else
+ 					echo -e "Failed Package IPA"
+ 			fi
+ 		else
+ 			echo  -e  "XCode Build Failed"
+ 	fi
+done
+
+echo "Build App Store"
+# app store
+xcodebuild archive -workspace ${PRODUCT_NAME}.xcworkspace -scheme ${PRODUCT_NAME} -sdk ${SDK} -configuration ${CONFIG} -archivePath $ARCHIVE_PATH APP_PROFILE="56ee7a05-8cb9-4b18-b257-610982ee3f00" TODAY_PROFILE="63a4607a-21af-425b-8767-582493cb18b1"
+APP_VER=`/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" VeloCarPooling/VeloCarPooling-Info.plist`
+APP_BUILD=`/usr/libexec/PlistBuddy -c "Print CFBundleVersion" VeloCarPooling/VeloCarPooling-Info.plist`
+/usr/libexec/PlistBuddy -c "Set CFBundleVersion ${APP_BUILD}" -c "Save" $ARCHIVE_PATH/Products/Applications/${PRODUCT_NAME}.app/PlugIns/today.appex/info.plist
+/usr/libexec/PlistBuddy -c "Set com.didapinche.Env online" -c "Save" $ARCHIVE_PATH/Products/Applications/${PRODUCT_NAME}.app/info.plist
+REV=`date +%Y%m%d-%H%M`
+IPA_PATH=${BUILD_DIR}/didaCarpooling_${APP_VER}_appstore_${REV}.ipa
+zip -r ${BUILD_DIR}/${PRODUCT_NAME}.xcarchive.zip ${BUILD_DIR}/${PRODUCT_NAME}.xcarchive
+xcodebuild -exportArchive -archivePath $ARCHIVE_PATH -exportFormat ipa -exportPath ${IPA_PATH}  -exportWithOriginalSigningIdentity
