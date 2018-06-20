@@ -4,6 +4,8 @@ podspec验证
 pod lib lint Mall.podspec --allow-warnings
 pod spec lint Mall.podspec --allow-warnings
 pod repo push ESSpecs Mall.podspec --allow-warnings
+公开
+pod trunk push TFDropDownMenu.podspec --allow-warnings
 
 创建jenkins
 brew install jenkins
