@@ -1,18 +1,18 @@
 # Note
 
-podspec验证
-pod lib lint Mall.podspec --allow-warnings
-pod spec lint Mall.podspec --allow-warnings
-pod repo push ESSpecs Mall.podspec --allow-warnings
-公开
-pod trunk push TFDropDownMenu.podspec --allow-warnings
+##podspec验证
+*pod lib lint Mall.podspec --allow-warnings
+*pod spec lint Mall.podspec --allow-warnings
+*pod repo push ESSpecs Mall.podspec --allow-warnings
+##公开
+*pod trunk push TFDropDownMenu.podspec --allow-warnings
 
-创建jenkins
-brew install jenkins
-sudo gem install fastlane
-brew install jq
+##创建jenkins
+*brew install jenkins
+*sudo gem install fastlane
+*brew install jq
 
-脚本
+##脚本
 IPANAME="consumer"
 EXPORTPLIST='/Users/jiangyunfeng/Desktop/ESHome/ExportOptions_QA.plist'
 #EXPORTPLIST='/Users/shejijia/workspace/ExportOptions_AppStore.plist'
