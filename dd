@@ -1,0 +1,76 @@
+dida dabao
+PRODUCT_NAME="TaxiDriver"
+BUILD_DIR="build"
+SDK="iphoneos"
+DATE=`date +%Y%m%d-%H%M`
+APP_VER=`/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" TaxiDriver/Info.plist`
+
+print() {
+    echo $1 >> ${BUILD_DIR}/output.txt
+}
+
+# 参数1[configuration 名称]，参数2[用于输出文件名]，参数3[使用的 export plist]，参数4[是否打多环境包]
+build_target() {
+    print "--Build $1--"
+
+    ARCHIVE_PATH=${BUILD_DIR}/${PRODUCT_NAME}.xcarchive
+    IPA_PATH=${BUILD_DIR}/${PRODUCT_NAME}.ipa
+
+    print "Archive: start"
+    xcodebuild archive -workspace ${PRODUCT_NAME}.xcworkspace -scheme ${PRODUCT_NAME} -sdk ${SDK} -configuration $1 -archivePath ${ARCHIVE_PATH}
+    
+    if [ -e ${ARCHIVE_PATH} ] ; then
+        print "Archive: success"
+
+		if [ "$4" = true ] ; then
+        	#ENVS=("test" "simulation" "online")
+			ENVS=("online")
+            for RUN_ENV in ${ENVS[*]}
+            do
+                /usr/libexec/PlistBuddy -c "Set RunEnv ${RUN_ENV}" -c "Save" ${ARCHIVE_PATH}/Products/Applications/${PRODUCT_NAME}.app/info.plist
+    
+                print "Export ${RUN_ENV}: start"
+                xcodebuild -exportArchive -archivePath ${ARCHIVE_PATH} -exportPath ${BUILD_DIR}/ -exportOptionsPlist $3
+    			
+                if [ -e ${IPA_PATH} ] ; then
+                    print "Export: success"
+    
+    				FINAL_IPA_PATH=${BUILD_DIR}/${PRODUCT_NAME}_${APP_VER}_${RUN_ENV}_${DATE}.ipa
+                    mv ${IPA_PATH} ${FINAL_IPA_PATH}
+                    
+                    curl -F "file=@${FINAL_IPA_PATH}" -F "uKey=8f401fc7abe421279c3c416b345a983a" -F "_api_key=cb73c30a1275d508577afd0e0e40c6ca" https://www.pgyer.com/apiv1/app/upload
+                    
+                else
+                    print "Export: failure"
+                fi
+            done
+        else
+        	print "Export: start"
+            xcodebuild -exportArchive -archivePath ${ARCHIVE_PATH} -exportPath ${BUILD_DIR}/ -exportOptionsPlist $3
+
+            if [ -e ${IPA_PATH} ] ; then
+                print "Export: success"
+
+				FINAL_IPA_PATH=${BUILD_DIR}/${PRODUCT_NAME}_${APP_VER}_$2_${DATE}.ipa
+                mv ${IPA_PATH} ${FINAL_IPA_PATH}
+                
+                
+            else
+                print "Export: failure"
+            fi
+        fi
+        
+        rm -rf ${ARCHIVE_PATH}
+    else
+        print "Archive: failure"
+    fi
+}
+
+rm -rf ${BUILD_DIR}
+mkdir ${BUILD_DIR}
+
+print "Clean"
+xcodebuild clean -workspace ${PRODUCT_NAME}.xcworkspace -scheme ${PRODUCT_NAME} -sdk ${SDK}
+
+build_target Release none exportOptionsPlistAdHoc.plist true
+
